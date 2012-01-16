@@ -1,4 +1,5 @@
 require 'mongo_mapper'
+require File.join(File.dirname(__FILE__), 'versioned', 'meta')
 require File.join(File.dirname(__FILE__), 'versioned', 'version')
 require File.join(File.dirname(__FILE__), 'versioned', 'versioned')
 

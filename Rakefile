@@ -24,7 +24,7 @@ task :default => 'test:unit'
 
 desc 'Builds the gem'
 task :build do
-  sh 'gem build mongomapper-versioned.gemspec'
+  sh 'gem build versioned.gemspec'
   Dir.mkdir('pkg') unless File.directory?('pkg')
   sh "mv mongomapper-versioned-#{Versioned::VERSION}.gem pkg/mongomapper-versioned-#{Versioned::VERSION}.gem"
 end
