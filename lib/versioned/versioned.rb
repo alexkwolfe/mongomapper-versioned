@@ -14,6 +14,8 @@ module Versioned
     extend ActiveSupport::Concern
     
     included do      
+      key :version_id, ObjectId, default: proc { BSON::ObjectId.new }
+      
       many :versions, :as => :versioned, :sort => :id2.desc
       
       before_update :push_version, :unless => :rolling_back?
@@ -26,7 +28,7 @@ module Versioned
     end
     
     def rolling_back?
-      @rolling_back
+      !!@rolling_back
     end
     
     def save(options={})
@@ -38,11 +40,20 @@ module Versioned
     
     def push_version
       unless self.changes.empty?
-        version = self.versions.create(doc: version_doc, updater: self.updater)
+        version = self.versions.create(_id: self.version_id, doc: version_doc, updater: self.updater)
+        self.generate_version_id
       end
     ensure
       self.updater = nil
       self.version_created_at = nil
+    end
+    
+    def generate_version_id
+      version_id = BSON::ObjectId.new
+      # don't use #save; that'll generate a new version
+      self.write_attribute(:version_id, version_id)
+      self.collection.update({'_id' => self.id}, { 'version_id' => version_id })
+      self.changed_attributes.clear
     end
     
     def prune_versions
@@ -73,6 +84,7 @@ module Versioned
           doc[attr] = vals.first
         end
         doc.delete('_id')
+        doc.delete('version_id')
       end
     end
     

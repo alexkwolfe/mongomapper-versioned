@@ -52,6 +52,7 @@ class Version
   def rollback
     versioned.rollback do
       trouble = []
+      versioned.version_id = self.id
       self.doc.each_pair do |attr, val|
         mutator = "#{attr}="
         if versioned.respond_to?(mutator)
@@ -63,6 +64,7 @@ class Version
       unless trouble.empty?
         raise "Trying to load a #{versioned.class.name} version that has unsupported attributes: #{trouble.to_sentence}" 
       end
+      versioned.versions.destroy_all(:id2.gte => self.id2)
       versioned.save
     end
   end

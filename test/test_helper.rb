@@ -12,7 +12,7 @@ require 'test/models/user'
 
 
 def create_user
-  User.create(
+  User.create!(
     :name => 'Alex Wolfe', 
     :email => 'alexkwolfe@gmail.com',
     :posts => []

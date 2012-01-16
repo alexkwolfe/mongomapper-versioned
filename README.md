@@ -78,3 +78,29 @@ Each `Version` contains a copy of the document that was versioned. You can roll 
 @user.reload
 ````
 
+### Version IDs
+
+A versioned document has a `version_id` key. When you update a document, the new Version document takes on the ID of the document's current `version_id` value. The document gets a new `version_id`.
+
+Rolling back to a previous revision will also roll back the `version_id` value of the document.
+
+This mechanism allows you to undo changes to a document:
+
+````ruby
+version_id = @user.version_id
+@user.name 
+=> "Roger"
+
+@user.name = "Frank"
+@user.save
+@user.name = "Bob"
+@user.save
+@user.versions.find(version_id).rollback
+
+@user.reload
+@user.name
+=> "Roger"
+@user.version_id == version_id
+=> true
+````
+
