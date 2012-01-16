@@ -1,0 +1,5 @@
+development:
+  database: versioned_dev
+
+test:
+  database: versioned_test
