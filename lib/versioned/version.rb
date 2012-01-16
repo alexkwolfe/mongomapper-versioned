@@ -17,16 +17,21 @@ class Version
   class << self
     def check_indexes
       unless missing_indexes.empty?
-        ::Rails.logger.warn("MongoMapper Versioned indexes have not been created. Run `rake versioned:create_indexes`.")
+        msg = "Indexes have not been created for MongoMapper versioned docs. Run `rake versioned:create_indexes`."
+        if Kernel.const_defined?(:IRB)
+          puts "Warning: #{msg}"
+        else
+          ::Rails.logger.warn(msg)
+        end
       end
     end
     
     def missing_indexes
       existing_index_names = self.collection.index_information.keys
       required_index_names = required_indexes.collect do |i| 
-        i.first.collect { |k| "#{k[0]}_#{k[1]}" }.join
+        i.first.collect { |k| "#{k[0]}_#{k[1]}" }.join('_')
       end
-      missing_index_names = required_index_names - existing_index_names
+      required_index_names - existing_index_names
     end
 
     def create_indexes
@@ -63,8 +68,7 @@ class Version
   end
   
   protected
-  # Update the created_at field on the Document to the current time. This is
-  # only called on create.
+  # Update the created_at field on the Document to the current time. This is only called on create.
   def set_created_at
     unless self.created_at
       self.created_at = Time.now.utc 

@@ -1,5 +1,5 @@
 # encoding: UTF-8
-require File.join File.dirname(__FILE__), '/lib/versioned'
+require File.join File.dirname(__FILE__), '/lib/versioned/meta'
 
 Gem::Specification.new do |s|
   s.name                          = 'mongomapper-versioned'

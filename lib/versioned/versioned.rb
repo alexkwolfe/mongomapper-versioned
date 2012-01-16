@@ -1,9 +1,6 @@
 require 'active_support/concern'
 
-module Versioned
-  
-  VERSION = '0.0.1'
-  
+module Versioned  
   extend ActiveSupport::Concern
   
   module ClassMethods
@@ -38,32 +35,18 @@ module Versioned
       self.version_created_at = options.delete(:version_created_at)
       super
     end
-
-    # def save!(options={})
-    #   options.assert_valid_keys(:safe, :updater, :version_created_at)
-    #   save(options) || raise(DocumentNotValid.new(self))
-    # end
     
     def push_version
-      if self.changes.empty?
-        #puts "SKIPPING VERSION because no changes"
-      else
+      unless self.changes.empty?
         version = self.versions.create(doc: version_doc, updater: self.updater)
-        #puts "PUSH VERSION: #{version.inspect}"
       end
     ensure
       self.updater = nil
       self.version_created_at = nil
     end
     
-    #
-    # TEST ME!!!
-    #
     def prune_versions
-      #puts "UPDATED: #{[self.versions.first.created_at.utc, self.versions.first.doc['name']]}" if self.versions.first
       if self.keep_versions_created_before
-        #puts "DESTROY VERSIONS OLDER THAN: #{self.keep_versions_until.utc}"
-        #puts "TO BE DESTROYED: #{self.versions.where(:created_at.lt => self.keep_versions_until).collect{|v| [v.created_at, v.doc['name']]}}"
         self.versions.destroy_all(:created_at.lt => self.keep_versions_created_before)
       elsif self.class.max_versions
         limit = self.versions.count - self.class.max_versions
