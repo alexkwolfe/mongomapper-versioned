@@ -80,6 +80,7 @@ class VersioningTest < ActiveSupport::TestCase
     
     context 'that has been updated many times' do
       setup do
+        @version_id = @user.version_id
         # Versions: Alex 4, Alex 3, Alex 2, Alex 1, Alex Wolfe
         (1..5).each do |i| 
           @user.name = "Alex #{i}"
@@ -92,6 +93,12 @@ class VersioningTest < ActiveSupport::TestCase
         assert_equal 5, @user.versions.count
         assert_equal "Alex 4", @user.versions.first.doc['name']
         assert_equal "Alex Wolfe", @user.versions.last.doc['name']
+      end
+      
+      should 'find by version id' do
+        version = @user.versions.find(@version_id)
+        assert_equal @version_id, version.id
+        assert_equal 'Alex Wolfe', version.doc['name']
       end
       
       context 'and has been rolled back' do
