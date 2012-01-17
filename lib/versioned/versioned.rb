@@ -23,7 +23,7 @@ module Versioned
       after_destroy :destroy_versions
       
       cattr_accessor :max_versions
-      attr_accessor :updater, :version_created_at
+      attr_accessor :updater
       attr_writer :rolling_back
     end
     
@@ -32,9 +32,7 @@ module Versioned
     end
     
     def save(options={})
-      options.assert_valid_keys(:updater, :version_created_at)
       self.updater = options.delete(:updater)
-      self.version_created_at = options.delete(:version_created_at)
       super
     end
     
@@ -45,7 +43,6 @@ module Versioned
       end
     ensure
       self.updater = nil
-      self.version_created_at = nil
     end
     
     def generate_version_id

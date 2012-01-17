@@ -78,6 +78,8 @@ Each `Version` contains a copy of the document that was versioned. You can roll 
 @user.reload
 ````
 
+After you roll back, newer versions are automatically removed.
+
 ### Version IDs
 
 A versioned document has a `version_id` key. When you update a document, the new Version document takes on the ID of the document's current `version_id` value. The document gets a new `version_id`.
