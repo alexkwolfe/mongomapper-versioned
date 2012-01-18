@@ -1,5 +1,6 @@
 require 'active_support/core_ext/array/conversions'
 require 'mongomapper_id2'
+require 'yajl'
 
 class Version
   include MongoMapper::Document
@@ -9,7 +10,7 @@ class Version
   key :doc, Hash
   key :created_at, Time
   
-  before_create :set_created_at
+  before_create :set_created_at, :encode_doc
   
   belongs_to :versioned, polymorphic: true
   belongs_to :updater, polymorphic: true
@@ -75,5 +76,9 @@ class Version
     unless self.created_at
       self.created_at = Time.now.utc 
     end
+  end
+  
+  def encode_doc
+    self.doc = Yajl::Parser.new.parse(Yajl::Encoder.encode(self.doc))
   end
 end

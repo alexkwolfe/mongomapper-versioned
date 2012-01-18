@@ -1,7 +1,10 @@
 require 'test_helper'
+require 'active_support/time_with_zone'
+require 'tzinfo'
 
 class VersioningTest < ActiveSupport::TestCase
   setup do
+    Time.zone = 'UTC'
     User.max_versions = nil
     @user = create_user
   end

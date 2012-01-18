@@ -13,9 +13,7 @@ Gem::Specification.new do |s|
   s.files                         = Dir.glob('lib/**/*') + %w[Gemfile Rakefile README.md]
   s.test_files                    = Dir.glob('test/**/*')
   
-  s.add_dependency 'rails', '>=3.1.0'
-  #s.add_dependency 'i18n'
-  #s.add_dependency 'builder'
+  s.add_dependency 'yajl-ruby'
   s.add_dependency 'bson_ext'
   s.add_dependency 'mongo_mapper', '>= 0.10.1'
   s.add_dependency 'mongomapper_id2'
@@ -24,4 +22,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'shoulda'
   s.add_development_dependency 'ruby-debug19'
   s.add_development_dependency 'timecop'
+  s.add_development_dependency 'tzinfo'
 end
