@@ -102,13 +102,17 @@ version_id = @user.version_id
 @user.name 
 => "Roger"
 
+# change some stuff
 @user.name = "Frank"
 @user.save
 @user.name = "Bob"
 @user.save
-@user.versions.find(version_id).rollback
 
-@user.reload
+# rollback
+version = @user.versions.find(version_id)
+@user.rollback(version)
+
+# document is restored
 @user.name
 => "Roger"
 @user.version_id == version_id
