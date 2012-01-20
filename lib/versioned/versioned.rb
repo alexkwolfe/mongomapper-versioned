@@ -14,11 +14,24 @@ module Versioned
     extend ActiveSupport::Concern
     
     included do      
-      key :version_id, ObjectId, default: proc { BSON::ObjectId.new }
+      key :version_id, String, default: proc { SecureRandom.hex(16) }      
       
-      many :versions, :as => :versioned, :sort => :id2.desc
+      many :versions, :as => :versioned, :sort => :id2.desc do 
+        def where_id(id)
+          ids = Array(id).collect(&:to_s)
+          query = if ids.all?{|id| BSON::ObjectId.legal?(id.to_s) }
+            where('id' => { '$in' => ids.collect{|id| BSON::ObjectId.from_string(id) } })
+          else
+            where('doc.version_id' => { '$in' => ids })
+          end
+        end
+        
+        def find(id)
+          where_id(id).first
+        end
+      end
       
-      before_update :push_version, :unless => :rolling_back?
+      before_update :push_version
       after_update :prune_versions
       after_destroy :destroy_versions
       
@@ -31,14 +44,21 @@ module Versioned
       !!@rolling_back
     end
     
+    def pushing_version?
+      !!@pushing_version
+    end
+    
     def save(options={})
       self.updater = options.delete(:updater)
       super
     end
     
     def push_version
-      unless self.changes.empty?
-        version = self.versions.create(_id: self.version_id, doc: version_doc, updater: self.updater)
+      if rolling_back?
+        persisted = self.class.find(self._id)
+        self.versions.create(doc: persisted.version_doc, updater: self.updater)
+      elsif !self.changes.empty?
+        self.versions.create(doc: version_doc, updater: self.updater)
         self.generate_version_id
       end
     ensure
@@ -46,10 +66,10 @@ module Versioned
     end
     
     def generate_version_id
-      version_id = BSON::ObjectId.new
+      version_id = SecureRandom.hex(16)
       # don't use #save; that'll generate a new version
       self.write_attribute(:version_id, version_id)
-      self.collection.update({'_id' => self.id}, { 'version_id' => version_id })
+      self.collection.update({'_id' => self._id}, { 'version_id' => version_id })
       self.changed_attributes.clear
     end
     
@@ -81,17 +101,16 @@ module Versioned
           doc[attr] = vals.first
         end
         doc.delete('_id')
-        doc.delete('version_id')
       end
     end
     
-    def rollback
+    def rollback(version)
       self.rolling_back = true
-      yield
+      self.version_id = version.doc['version_id']
+      self.update_attributes(version.doc)
     ensure
-      self.rolling_back = false
+      self.rolling_back = false 
     end
-    
 
   end
 end

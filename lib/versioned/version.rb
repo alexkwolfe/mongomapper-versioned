@@ -14,7 +14,11 @@ class Version
   
   belongs_to :versioned, polymorphic: true
   belongs_to :updater, polymorphic: true
-
+  
+  def version_id
+    doc['version_id']
+  end
+  
   class << self
     def check_indexes
       unless missing_indexes.empty?
@@ -43,30 +47,11 @@ class Version
     
     def required_indexes
       [
+        [[[:versioned_id, 1], [:versioned_type, 1], ['doc.version_id', 1]], background: true ],
         [[[:versioned_id, 1], [:versioned_type, 1], [:created_at, -1]], background: true ],
         [[[:versioned_id, 1], [:versioned_type, 1], [:id2, -1]], background: true],
         [[[:versioned_id, 1], [:versioned_type, 1], [:id2, 1]], background: true]
       ]
-    end
-  end
-  
-  def rollback
-    versioned.rollback do
-      trouble = []
-      versioned.version_id = self.id
-      self.doc.each_pair do |attr, val|
-        mutator = "#{attr}="
-        if versioned.respond_to?(mutator)
-          versioned.send(mutator, val)
-        else
-          trouble.push(attr)
-        end
-      end
-      unless trouble.empty?
-        raise "Trying to load a #{versioned.class.name} version that has unsupported attributes: #{trouble.to_sentence}" 
-      end
-      versioned.versions.destroy_all(:id2.gte => self.id2)
-      versioned.save
     end
   end
   

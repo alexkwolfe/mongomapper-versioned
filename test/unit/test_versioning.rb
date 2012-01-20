@@ -20,7 +20,7 @@ class VersioningTest < ActiveSupport::TestCase
     end
     
     should 'have version id' do
-      assert @user.version_id.is_a?(BSON::ObjectId)
+      assert @user.version_id.is_a?(String)
     end
     
     should 'not share version ids' do
@@ -50,7 +50,7 @@ class VersioningTest < ActiveSupport::TestCase
       end
       
       should 'use version id' do
-        assert_equal @version_id, @user.versions.first.id
+        assert_equal @version_id, @user.versions.first.version_id
       end
       
       should 'get a new version id' do
@@ -58,14 +58,12 @@ class VersioningTest < ActiveSupport::TestCase
       end
       
       should 'rollback to previous version' do 
-        @user.versions.first.rollback
-        @user.reload
+        @user.rollback(@user.versions.first)
         assert_equal "Alex Wolfe", @user.name
       end
       
       should 'rollback version id' do
-        @user.versions.first.rollback
-        @user.reload
+        @user.rollback(@user.versions.first)
         assert_equal @version_id, @user.version_id
       end
       
@@ -75,16 +73,16 @@ class VersioningTest < ActiveSupport::TestCase
         assert_nil doc['_id']
       end
       
-      should 'not store version_id in version doc' do
+      should 'store version_id in version doc' do
         doc = @user.versions.first.doc
-        assert_nil doc['version_id']
+        assert_equal @version_id, doc['version_id']
       end
     end
     
     context 'that has been updated many times' do
       setup do
         @version_id = @user.version_id
-        # Versions: Alex 4, Alex 3, Alex 2, Alex 1, Alex Wolfe
+        # Versions: Alex 4, Alex 3, Alex 2, Alex 1, Alex Wolfe 
         (1..5).each do |i| 
           @user.name = "Alex #{i}"
           @user.save!
@@ -92,7 +90,7 @@ class VersioningTest < ActiveSupport::TestCase
       end
       
       should 'sort versions in reverse chronological order' do
-        assert_equal @user.versions.to_a.sort {|x,y| y.created_at <=> x.created_at }, @user.versions.to_a
+        assert_equal @user.versions.to_a.sort {|x,y| y.id2 <=> x.id2 }, @user.versions.to_a
         assert_equal 5, @user.versions.count
         assert_equal "Alex 4", @user.versions.first.doc['name']
         assert_equal "Alex Wolfe", @user.versions.last.doc['name']
@@ -100,7 +98,7 @@ class VersioningTest < ActiveSupport::TestCase
       
       should 'find by version id' do
         version = @user.versions.find(@version_id)
-        assert_equal @version_id, version.id
+        assert_equal @version_id, version.doc['version_id']
         assert_equal 'Alex Wolfe', version.doc['name']
       end
       
@@ -108,22 +106,45 @@ class VersioningTest < ActiveSupport::TestCase
         setup do
           # second to oldest
           @version = @user.versions[2] 
-          @version.rollback 
-          @user.reload
+          assert @user.rollback(@version)
         end
         
         should 'have original data' do
           assert_equal "Alex 2", @user.name
+          assert_equal @version.doc['created_at'], @user.created_at.as_json
+          
+          # Unclear whether user should have the time the version was last updated 
+          # or the time the rollback was performed.
+          #assert_equal @version.doc['updated_at'], @user.updated_at.as_json
         end
         
         should 'have original version id' do
-          assert_equal @version.id, @user.version_id
+          assert_equal @version.doc['version_id'], @user.version_id
         end
         
-        should 'have correct versions' do
-          assert_equal 2, @user.versions.count
-          assert_equal 'Alex 1', @user.versions.first.doc['name']
-          assert_equal 'Alex Wolfe', @user.versions.last.doc['name']
+        should 'add a new version for the rollback' do
+          assert_equal 6, @user.versions.count
+          assert_equal 'Alex 5', @user.versions[0].doc['name']
+          assert_equal 'Alex 4', @user.versions[1].doc['name']
+          assert_equal 'Alex 3', @user.versions[2].doc['name']
+          assert_equal 'Alex 2', @user.versions[3].doc['name']
+          assert_equal 'Alex 1', @user.versions[4].doc['name']
+          assert_equal 'Alex Wolfe', @user.versions[5].doc['name']
+        end
+        
+        context 'and modified again' do
+          setup do
+            @user.name = "Alex 6"
+            assert @user.save, @user.errors.messages.inspect
+          end
+          
+          should 'have one more version' do
+            assert_equal 7, @user.versions.count
+          end
+          
+          should 'have the same version twice' do
+            assert_equal 2, @user.versions.where_id(@version.version_id).count
+          end
         end
       end
     end
@@ -147,7 +168,7 @@ class VersioningTest < ActiveSupport::TestCase
   
   context 'Destroyed versioned document' do
     setup do
-      (1..5).each do |i| 
+      5.downto(1).each do |i| 
         @user.name = "#{@user.name} #{i}"
         @user.save!
       end
@@ -183,7 +204,6 @@ class VersioningTest < ActiveSupport::TestCase
         @user.name = "Alex #{i}"
         @user.save!
       end
-      @user.reload
     end
     
     should 'have no more than max' do
@@ -199,7 +219,7 @@ class VersioningTest < ActiveSupport::TestCase
           5.minutes
         end
       end
-      (1..20).each do |i| 
+      20.downto(1).each do |i| 
         Timecop.freeze(i.minutes.ago) do
           @user.name = "Alex #{i}"
           @user.save!

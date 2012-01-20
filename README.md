@@ -8,7 +8,7 @@ Add the gem to your Gemfile. Add the necessary Mongo indexes: run `Version.creat
 
 ### Basic Usage
 
-Add the `versioned` declaration to the MongoMapper document models you want to keep versions of. When you make a change to a versioned document, a new version will be stored. Deleting a stored document will delete all the associated versions.
+Add the `versioned` declaration to the MongoMapper document models you want to keep versions of. When you update a versioned document, a new version will be stored. Deleting a stored document will delete all the associated versions.
 
 ````ruby
 class User
@@ -21,7 +21,7 @@ end
 
 ### Querying
 
-Every versioned document model has an association called `versions`. It's a plain old MongoMapper one-to-many association with the `Version` model, sorted in reverse chronological order. You can query for versions using MongoMapper's standard query criteria:
+Every versioned document model has an association called `versions` that contains all past versions of a document. It's a plain old MongoMapper one-to-many association with the `Version` model, sorted in reverse chronological order. You can query for versions using MongoMapper's standard query criteria:
 
 ````ruby
 @user.versions.where(:created_at.lt > 1.day.ago)
@@ -71,22 +71,31 @@ When a versioned document is saved, you can pass the `updater` option to the sav
 
 ### Rolling back
 
-Each `Version` contains a copy of the document that was versioned. You can roll back to a particular version by calling the `rollback` method on the version you want. Reload the versioned document to pull the changes into the reference you're holding to the document.
+Each `Version` contains a copy of the document as it existed at a point in time. You can roll back to a particular version by calling the `rollback` method on the version you want. Reload the versioned document to pull the changes into the reference you're holding to the document.
 
 ````ruby
+@user.versions.count
+=> 9
 @user.versions[5].rollback
-@user.reload
+=> true
+@user.versions.count
+=> 10
+@user.version_id == @user.versions[5].version_id
+=> true
 ````
 
-After you roll back, newer versions are automatically removed.
+#### What happens to the versions collection on rollback?
+
+Rolling back a document will create a new version representing its persisted state just prior to rollback. When you rollback a document, then make changes on top of the rolled back document, it's normal for the same Version to appear in the `versions` collection more than once.
+
 
 ### Version IDs
 
-A versioned document has a `version_id` key. When you update a document, the new Version document takes on the ID of the document's current `version_id` value. The document gets a new `version_id`.
+The `versions` collection contains all the previous versions of a document. The document itself represents the "current version." The document has a `version_id` key and when the document is updated its version id is stored with the Version. Then the document gets a new `version_id`.
 
 Rolling back to a previous revision will also roll back the `version_id` value of the document.
 
-This mechanism allows you to undo changes to a document:
+This mechanism allows you to easily undo changes to a document:
 
 ````ruby
 version_id = @user.version_id
@@ -105,4 +114,3 @@ version_id = @user.version_id
 @user.version_id == version_id
 => true
 ````
-
