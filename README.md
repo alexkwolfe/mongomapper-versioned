@@ -86,7 +86,7 @@ Each `Version` contains a copy of the document as it existed at a point in time.
 
 ##### What happens to the versions collection on rollback?
 
-Rolling back a document will create a new version representing its persisted state just prior to rollback. When you rollback a document, then make changes on top of the rolled back document, it's normal for the same Version to appear in the `versions` collection more than once.
+Rolling back a document will create a new version representing its persisted state just prior to rollback. When you rollback a document, then make changes on top of the rolled back document, the `versions` collection contains two Version instances with the same `version_id`.
 
 
 ### Version IDs
