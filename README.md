@@ -95,12 +95,13 @@ When a versioned document is saved, you can pass the `updater` option to the sav
 
 ### Rolling back
 
-Each `Version` contains a copy of the document as it existed at a point in time. You can roll back to a particular version by calling the `rollback` method on the version you want. Reload the versioned document to pull the changes into the reference you're holding to the document.
+Each `Version` contains a copy of the document as it existed at a point in time. You can roll back to a particular version by calling the `rollback` method on the document, passing the version.
 
 ````ruby
 @user.versions.count
 => 9
-@user.versions[5].rollback
+version = @user.versions[5]
+@user.rollback(version)
 => true
 @user.versions.count
 => 10
