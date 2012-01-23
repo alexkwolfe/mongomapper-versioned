@@ -12,8 +12,8 @@ Add the `versioned` declaration to the MongoMapper document models you want to k
 
 ````ruby
 class User
-  versioned 
-  
+  versioned
+
   key :name, String
   key :email, String
 end
@@ -34,7 +34,7 @@ Use the `max` option to specifiy the maximum number of versions you want to keep
 ````ruby
 class User
   versioned max: 10
-  
+
   key :name, String
   key :email, String
 end
@@ -47,15 +47,20 @@ This doesn't work with the `max` option.  Use one or the other.
 ````ruby
 class User
   versioned
-  
+
   key :name, String
   key :email, String
-  
+
   def keep_versions_for
     90.days
   end
 end
-```` 
+````
+
+### Safety
+
+Attempting to update a document with an old `version_id` will result in a `Versioned::ConflictingVersionError`. Use the error's
+`version_id` accessor to get the version of the currently stored document.
 
 ### Auditing
 
@@ -99,7 +104,7 @@ This mechanism allows you to easily undo changes to a document:
 
 ````ruby
 version_id = @user.version_id
-@user.name 
+@user.name
 => "Roger"
 
 # change some stuff
