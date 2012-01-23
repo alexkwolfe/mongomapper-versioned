@@ -57,10 +57,11 @@ class User
 end
 ````
 
-### Safety
+### Handling version conflicts
 
 Attempting to update a document with an old `version_id` will result in a `Versioned::ConflictingVersionError`. Use the error's
-`version_id` accessor to get the version of the currently stored document.
+`version_id` accessor to get the version of the currently stored document. This feature is meant to prevent one user from over-writing
+the changes of another.
 
 ### Auditing
 
