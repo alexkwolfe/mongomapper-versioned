@@ -96,6 +96,18 @@ class VersioningTest < ActiveSupport::TestCase
         assert_equal User.find(@user.id).version_id, error.version_id
         assert_equal 'alex', @user.reload.name
       end
+
+      should 'update when version ids are the same' do
+        @user2 = User.new(
+          id: @user.id,
+          version_id: @user.version_id,
+          name: "Bobby",
+          email: "bboy@bobbybrown.com"
+        )
+        @user2.save
+        @user.reload
+        assert_equal "Bobby", @user.name
+      end
     end
 
     context 'that has been updated many times' do

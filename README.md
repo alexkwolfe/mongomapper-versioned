@@ -60,8 +60,26 @@ end
 ### Handling version conflicts
 
 Attempting to update a document with an old `version_id` will result in a `Versioned::ConflictingVersionError`. Use the error's
-`version_id` accessor to get the version of the currently stored document. This feature is meant to prevent one user from over-writing
-the changes of another.
+`version_id` accessor to get the version of the currently stored document.
+
+This feature is meant to prevent one user from over-writing the changes of another and give you the option of resolving the conflict
+gracefully:
+
+````ruby
+@user = User.first
+@user.name = "Bobby"
+begin
+  @user.save
+rescue Versioned::ConflictingVersionError => e
+  # Keep your changes
+  @user.version_id = e.version_id
+  @user.save
+
+  # Or keep other person's changes
+  # @user.reload
+end
+
+````
 
 ### Auditing
 
