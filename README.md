@@ -1,3 +1,5 @@
+*If you are interested in becoming the maintainer of this project, please let me know.*
+
 ## Versioned
 
 Automatically store a version of a MongoMapper document every time it's updated. Configure a maximum number of versions you'd like to keep, or even the amount of time a particular document should keep versions around.
